@@ -22,9 +22,10 @@
   ],
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
-    "dotenv": "^16.4.5"
+    "dependencies": "^0.0.1",
+    "dotenv": "^16.4.5",
+    "package.json": "^2.0.1"
   },
-  "devDependencies": {},
   "license": "PROPRIETARY",
   "private": true
 }
