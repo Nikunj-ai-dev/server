@@ -1,0 +1,30 @@
+{
+  "name": "ecommerce-checkout-backend",
+  "version": "1.0.0",
+  "description": "Production checkout system with Shopify, Razorpay, WhatsApp OTP, and Supabase",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "worker": "node src/worker/index.js",
+    "test": "echo \"Error: tests not yet implemented\" && exit 1"
+  },
+  "keywords": [
+    "ecommerce",
+    "checkout",
+    "shopify",
+    "razorpay",
+    "whatsapp",
+    "supabase"
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {},
+  "license": "PROPRIETARY",
+  "private": true
+}

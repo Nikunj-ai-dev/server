@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment — NEVER commit real secrets or credentials
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor/IDE
+.vscode/
+.idea/
+*.iml
+.project
+.settings/
+
+# AWS/Cloud
+.aws/
+.aws-credentials
+
+# Runtime
+*.pid
+*.seed
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+build/
+dist/
+.next/
+out/
+
+# Temporary
+temp/
+tmp/
+.tmp/
+
+# DEPRECATED FILES - Should be removed from production
+jobQueue.js
+queueWorker.js
+apprunner.yaml
+

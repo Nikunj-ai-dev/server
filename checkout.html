@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Checkout</title>
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8c96b;
+      --gold-pale: #fdf6e3;
+      --bg: #fafaf8;
+      --surface: #ffffff;
+      --surface-2: #f5f4f0;
+      --border: #e8e4dc;
+      --border-active: #c9a84c;
+      --text-primary: #1a1814;
+      --text-secondary: #6b6560;
+      --text-muted: #a09a93;
+      --success: #2e7d52;
+      --success-bg: #edf7f1;
+      --error: #b3261e;
+      --error-bg: #fdf3f2;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+    .header-secure {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .header-secure svg { width: 14px; height: 14px; }
+
+    /* ── LAYOUT ── */
+    .checkout-layout {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 32px 16px 80px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .checkout-layout { grid-template-columns: 1fr; padding: 16px 12px 80px; }
+      .order-summary-col { order: -1; }
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+      padding: 0 4px;
+    }
+    .progress-step {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+    .progress-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: var(--transition);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .progress-dot.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: white;
+      box-shadow: 0 0 0 4px rgba(201,168,76,0.2);
+    }
+    .progress-dot.done {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+    .progress-dot.done::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 10px;
+      border: 2px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+    .progress-dot .num { display: block; }
+    .progress-dot.done .num { display: none; }
+    .progress-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      transition: var(--transition);
+    }
+    .progress-line.done { background: var(--success); }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── STEP SECTIONS ── */
+    .step-section {
+      display: none;
+      animation: slideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .step-section.active { display: block; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      padding: 20px 24px 0;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+    .section-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── CART ITEMS ── */
+    .cart-items { padding: 20px 24px; }
+    .cart-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .cart-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .cart-item-img {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .cart-item-img-placeholder {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+    }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cart-item-variant {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .cart-item-qty-price {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+    .cart-item-qty {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--surface-2);
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    .cart-item-price {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .cart-item-compare {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-decoration: line-through;
+      margin-left: 4px;
+    }
+    .cart-inventory-badge {
+      font-size: 0.7rem;
+      margin-top: 4px;
+    }
+    .in-stock { color: var(--success); }
+    .low-stock { color: #e65100; }
+    .out-stock { color: var(--error); }
+
+    /* ── FORM ── */
+    .form-body { padding: 20px 24px 24px; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      background: var(--surface);
+      transition: var(--transition);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .form-input:focus {
+      border-color: var(--border-active);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    }
+    .form-input:disabled {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+    .form-input.error { border-color: var(--error); }
+    .form-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .form-error {
+      font-size: 0.72rem;
+      color: var(--error);
+      margin-top: 4px;
+      display: none;
+    }
+    .form-error.visible { display: block; }
+    .country-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+    .country-flag { font-size: 1.1rem; }
+
+    /* ── OTP ── */
+    .otp-intro { padding: 20px 24px 12px; }
+    .otp-phone-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--gold-pale);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius-sm);
+      margin: 12px 24px 0;
+    }
+    .otp-phone-num {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+    .otp-change-btn {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 600;
+      cursor: pointer;
+      background: none;
+      border: none;
+      text-decoration: underline;
+    }
+    .otp-inputs {
+      display: flex;
+      gap: 10px;
+      padding: 24px 24px 8px;
+      justify-content: center;
+    }
+    .otp-digit {
+      width: 48px;
+      height: 56px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-primary);
+      background: var(--surface);
+      transition: var(--transition);
+      outline: none;
+      caret-color: var(--gold);
+    }
+    .otp-digit:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.2);
+    }
+    .otp-digit.filled { border-color: var(--gold); background: var(--gold-pale); }
+    .otp-digit.error { border-color: var(--error); background: var(--error-bg); }
+    .otp-resend-row {
+      text-align: center;
+      padding: 8px 24px 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .otp-resend-btn {
+      background: none;
+      border: none;
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .otp-resend-btn:disabled { color: var(--text-muted); text-decoration: none; cursor: default; }
+    .otp-timer { font-weight: 600; color: var(--text-secondary); }
+
+    /* ── COUPON ── */
+    .coupon-body { padding: 20px 24px 24px; }
+    .coupon-input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .coupon-input-row .form-input {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    .coupon-apply-btn {
+      padding: 12px 18px;
+      background: var(--text-primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .coupon-apply-btn:hover { background: #2d2a25; }
+    .coupon-apply-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+    .coupon-result {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: none;
+    }
+    .coupon-result.success {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid #a7d9b9;
+    }
+    .coupon-result.fail {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid #f5c2c0;
+    }
+    .coupon-skip {
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .coupon-skip span {
+      color: var(--gold);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── PAYMENT METHODS ── */
+    .payment-options { padding: 20px 24px 24px; }
+    .payment-option {
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+    }
+    .payment-option:last-child { margin-bottom: 0; }
+    .payment-option:hover { border-color: var(--gold-light); background: var(--gold-pale); }
+    .payment-option.selected {
+      border-color: var(--gold);
+      background: var(--gold-pale);
+      box-shadow: 0 0 0 1px var(--gold);
+    }
+    .payment-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+    .payment-option.selected .payment-radio {
+      border-color: var(--gold);
+    }
+    .payment-radio-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      transform: scale(0);
+      transition: var(--transition);
+    }
+    .payment-option.selected .payment-radio-dot { transform: scale(1); }
+    .payment-icon { font-size: 1.4rem; }
+    .payment-info { flex: 1; }
+    .payment-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--text-primary);
+    }
+    .payment-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .payment-badges {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .payment-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── CTA BUTTON ── */
+    .cta-bar {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #c9a84c 0%, #b8932a 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(201,168,76,0.35);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled {
+      background: #d4cec4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-primary .btn-loader {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    .btn-primary.loading .btn-text { display: none; }
+    .btn-primary.loading .btn-loader { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 10px;
+    }
+    .btn-secondary:hover { background: var(--surface-2); }
+
+    /* ── ORDER SUMMARY ── */
+    .summary-card { position: sticky; top: 80px; }
+    .summary-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .summary-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .summary-items-count {
+      font-size: 0.78rem;
+      background: var(--gold-pale);
+      color: var(--gold);
+      border: 1px solid var(--gold-light);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .summary-products { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .summary-product {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .summary-product:last-child { margin-bottom: 0; }
+    .summary-product-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .summary-product-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-product-price {
+      font-size: 0.82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .summary-lines { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .summary-line:last-child { margin-bottom: 0; }
+    .summary-line.discount { color: var(--success); }
+    .summary-line.free { color: var(--success); font-weight: 600; }
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 20px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .summary-trust {
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+    }
+    .trust-icon { font-size: 0.9rem; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--text-primary);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 24px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      transition: 0.3s ease;
+      pointer-events: none;
+      max-width: 90vw;
+      text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success-toast { background: var(--success); }
+    #toast.error-toast { background: var(--error); }
+
+    /* ── SUCCESS SCREEN ── */
+    #success-screen {
+      display: none;
+      text-align: center;
+      padding: 60px 24px;
+      animation: slideIn 0.4s ease;
+    }
+    #success-screen.active { display: block; }
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      background: var(--success-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 20px;
+    }
+    .success-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .success-subtitle {
+      font-size: 0.87rem;
+      color: var(--text-muted);
+      max-width: 300px;
+      margin: 0 auto 28px;
+    }
+    .success-order-id {
+      display: inline-block;
+      background: var(--gold-pale);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 8px 20px;
+      border-radius: 24px;
+      margin-bottom: 28px;
+    }
+
+    /* ── LOADING SKELETON ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-2) 25%, #eee 50%, var(--surface-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .skeleton-text { height: 14px; margin-bottom: 8px; }
+    .skeleton-img { width: 64px; height: 64px; border-radius: var(--radius-sm); }
+
+    /* ── EMAIL STEP ── */
+    .email-skip-link {
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .email-skip-link span {
+      color: var(--gold);
+      cursor: pointer;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand" id="store-name">Secure Checkout</div>
+  <div class="header-secure">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+    SSL Secured
+  </div>
+</header>
+
+<div class="checkout-layout">
+
+  <!-- LEFT: MAIN FLOW -->
+  <div class="checkout-main">
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-step">
+        <div class="progress-dot active" id="dot-1"><span class="num">1</span></div>
+        <div class="progress-line" id="line-1"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot" id="dot-2"><span class="num">2</span></div>
+        <div class="progress-line" id="line-2"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot" id="dot-3"><span class="num">3</span></div>
+        <div class="progress-line" id="line-3"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot" id="dot-4"><span class="num">4</span></div>
+        <div class="progress-line" id="line-4"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot" id="dot-5"><span class="num">5</span></div>
+        <div class="progress-line" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- STEP 1: CART REVIEW -->
+    <div class="step-section active card" id="step-cart">
+      <div class="section-header">
+        <div class="section-title">Review your order</div>
+        <div class="section-subtitle">Confirm items before checkout</div>
+      </div>
+      <div class="cart-items" id="cart-items-container">
+        <!-- skeleton -->
+        <div class="cart-item" id="skeleton-item">
+          <div class="skeleton skeleton-img"></div>
+          <div style="flex:1">
+            <div class="skeleton skeleton-text" style="width:70%"></div>
+            <div class="skeleton skeleton-text" style="width:40%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-primary" id="btn-to-address" onclick="goToStep(2)">
+          <span class="btn-text">Continue to Address →</span>
+          <span class="btn-loader"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: ADDRESS -->
+    <div class="step-section card" id="step-address">
+      <div class="section-header">
+        <div class="section-title">Delivery address</div>
+        <div class="section-subtitle">Where should we deliver your order?</div>
+      </div>
+      <div class="form-body">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-input" id="addr-name" type="text" placeholder="Your full name" autocomplete="name" />
+          <div class="form-error" id="err-name">Please enter your name</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <div style="display:flex;gap:8px">
+            <div class="country-field" style="flex-shrink:0;padding:12px 12px;font-size:0.9rem">🇮🇳 +91</div>
+            <input class="form-input" id="addr-phone" type="tel" placeholder="10-digit mobile number" maxlength="10" autocomplete="tel" style="flex:1" />
+          </div>
+          <div class="form-error" id="err-phone">Enter a valid 10-digit mobile number</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Street Address</label>
+          <input class="form-input" id="addr-line1" type="text" placeholder="House/Flat no., Street, Area" autocomplete="address-line1" />
+          <div class="form-error" id="err-addr">Please enter your address</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input class="form-input" id="addr-city" type="text" placeholder="City" autocomplete="address-level2" />
+            <div class="form-error" id="err-city">Required</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PIN Code</label>
+            <input class="form-input" id="addr-pin" type="text" placeholder="6-digit PIN" maxlength="6" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">State</label>
+            <select class="form-input" id="addr-state">
+              <option value="">Select state</option>
+              <option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option>
+              <option>Bihar</option><option>Chhattisgarh</option><option>Goa</option><option>Gujarat</option>
+              <option>Haryana</option><option>Himachal Pradesh</option><option>Jharkhand</option>
+              <option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option>
+              <option>Maharashtra</option><option>Manipur</option><option>Meghalaya</option>
+              <option>Mizoram</option><option>Nagaland</option><option>Odisha</option><option>Punjab</option>
+              <option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option>
+              <option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option>
+              <option>Uttarakhand</option><option>West Bengal</option>
+              <option>Delhi</option><option>Jammu and Kashmir</option><option>Ladakh</option>
+            </select>
+            <div class="form-error" id="err-state">Required</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Country</label>
+            <div class="country-field">
+              <span class="country-flag">🇮🇳</span> India
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-primary" id="btn-to-otp" onclick="submitAddress()">
+          <span class="btn-text">Send OTP to verify →</span>
+          <span class="btn-loader"></span>
+        </button>
+        <button class="btn-secondary" onclick="goToStep(1)">← Back</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: OTP -->
+    <div class="step-section card" id="step-otp">
+      <div class="section-header">
+        <div class="section-title">Verify your phone</div>
+        <div class="section-subtitle">A 6-digit OTP was sent to you via WhatsApp</div>
+      </div>
+      <div id="otp-phone-display" class="otp-phone-display">
+        <span>📱</span>
+        <span class="otp-phone-num" id="otp-phone-num">+91 XXXXXXXXXX</span>
+        <button class="otp-change-btn" onclick="goToStep(2)">Change</button>
+      </div>
+      <div class="otp-inputs" id="otp-inputs">
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+        <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]" />
+      </div>
+      <div class="otp-resend-row">
+        Didn't receive it?
+        <button class="otp-resend-btn" id="otp-resend-btn" onclick="resendOTP()" disabled>
+          Resend OTP
+        </button>
+        <span class="otp-timer" id="otp-timer">(00:30)</span>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-primary" id="btn-verify-otp" onclick="verifyOTP()">
+          <span class="btn-text">Verify & Continue →</span>
+          <span class="btn-loader"></span>
+        </button>
+        <button class="btn-secondary" onclick="goToStep(2)">← Back</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: EMAIL (OPTIONAL) -->
+    <div class="step-section card" id="step-email">
+      <div class="section-header">
+        <div class="section-title">Email address <span style="font-weight:400;color:var(--text-muted);font-size:0.8rem">(optional)</span></div>
+        <div class="section-subtitle">Get your order confirmation by email</div>
+      </div>
+      <div class="form-body">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="email-input" type="email" placeholder="you@example.com" autocomplete="email" />
+          <div class="form-hint">We'll send your order receipt here</div>
+        </div>
+      </div>
+      <div class="cta-bar">
+        <button class="btn-primary" onclick="submitEmail()">
+          <span class="btn-text">Continue →</span>
+          <span class="btn-loader"></span>
+        </button>
+        <div class="email-skip-link">
+          No email? <span onclick="skipEmail()">Skip this step</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: COUPON + PAYMENT -->
+    <div class="step-section card" id="step-payment">
+      <div class="section-header">
+        <div class="section-title">Coupon & Payment</div>
+        <div class="section-subtitle">Apply a coupon and choose payment method</div>
+      </div>
+
+      <!-- COUPON -->
+      <div class="coupon-body" style="border-bottom:1px solid var(--border)">
+        <div class="coupon-input-row">
+          <input class="form-input" id="coupon-input" type="text" placeholder="Enter coupon code" maxlength="50" />
+          <button class="coupon-apply-btn" id="coupon-apply-btn" onclick="applyCoupon()">Apply</button>
+        </div>
+        <div class="coupon-result" id="coupon-result"></div>
+        <div class="coupon-skip">Have no coupon? <span onclick="skipCoupon()">Proceed without coupon</span></div>
+      </div>
+
+      <!-- PAYMENT OPTIONS -->
+      <div class="payment-options">
+        <div class="payment-option" id="pay-cod" onclick="selectPayment('cod')">
+          <div class="payment-radio"><div class="payment-radio-dot"></div></div>
+          <div class="payment-icon">💵</div>
+          <div class="payment-info">
+            <div class="payment-name">Cash on Delivery</div>
+            <div class="payment-desc">Pay when your order arrives</div>
+            <div class="payment-badges">
+              <span class="payment-badge">NO ADVANCE</span>
+              <span class="payment-badge">100% SAFE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="payment-option" id="pay-online" onclick="selectPayment('razorpay')">
+          <div class="payment-radio"><div class="payment-radio-dot"></div></div>
+          <div class="payment-icon">⚡</div>
+          <div class="payment-info">
+            <div class="payment-name">Pay Online</div>
+            <div class="payment-desc">UPI, Card, Net Banking, Wallets</div>
+            <div class="payment-badges">
+              <span class="payment-badge">UPI</span>
+              <span class="payment-badge">CARD</span>
+              <span class="payment-badge">WALLET</span>
+              <span class="payment-badge">EMI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-bar">
+        <button class="btn-primary" id="btn-place-order" onclick="placeOrder()" disabled>
+          <span class="btn-text" id="place-order-label">Select Payment Method</span>
+          <span class="btn-loader"></span>
+        </button>
+        <button class="btn-secondary" onclick="goToStep(4)">← Back</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS SCREEN -->
+    <div class="card" id="success-screen">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Order Placed!</div>
+      <div class="success-subtitle">Your order has been confirmed. You'll receive updates on WhatsApp.</div>
+      <div class="success-order-id" id="success-order-id">#ORD-000000</div>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">Redirecting you back to store...</p>
+      <div style="width:160px;height:4px;background:var(--border);border-radius:2px;margin:0 auto;overflow:hidden">
+        <div id="redirect-bar" style="height:100%;background:var(--gold);border-radius:2px;width:0;transition:width 4s linear"></div>
+      </div>
+    </div>
+
+  </div><!-- end checkout-main -->
+
+  <!-- RIGHT: ORDER SUMMARY -->
+  <div class="order-summary-col">
+    <div class="card summary-card">
+      <div class="summary-header">
+        <div class="summary-title">Order Summary</div>
+        <div class="summary-items-count" id="summary-count">0 items</div>
+      </div>
+      <div class="summary-products" id="summary-products-list">
+        <div class="skeleton skeleton-text" style="margin-bottom:10px"></div>
+        <div class="skeleton skeleton-text" style="width:60%"></div>
+      </div>
+      <div class="summary-lines">
+        <div class="summary-line">
+          <span>Subtotal</span>
+          <span id="summary-subtotal">—</span>
+        </div>
+        <div class="summary-line discount" id="summary-discount-row" style="display:none">
+          <span>Discount</span>
+          <span id="summary-discount">—</span>
+        </div>
+        <div class="summary-line free">
+          <span>Delivery</span>
+          <span>FREE ✓</span>
+        </div>
+      </div>
+      <div class="summary-total">
+        <span>Total</span>
+        <span id="summary-total">—</span>
+      </div>
+      <div class="summary-trust">
+        <div class="trust-item"><span class="trust-icon">🔒</span> Secure payment</div>
+        <div class="trust-item"><span class="trust-icon">✅</span> Phone verified checkout</div>
+        <div class="trust-item"><span class="trust-icon">🚚</span> Free delivery across India</div>
+        <div class="trust-item"><span class="trust-icon">↩️</span> Easy 7-day returns</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end checkout-layout -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- RAZORPAY SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  currentStep: 1,
+  cartToken: null,
+  cartData: null,
+  checkoutSessionId: null,
+  address: null,
+  phone: null,
+  email: null,
+  sessionToken: null,
+  couponCode: null,
+  discountAmount: 0,
+  subtotal: 0,
+  grandTotal: 0,
+  paymentMethod: null,
+  otpTimerInterval: null,
+  razorpayOrderId: null,
+  idempotencyKey: null, // Add idempotency key
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  const params = new URLSearchParams(window.location.search);
+  state.cartToken = params.get('cart_token');
+  if (!state.cartToken) {
+    showToast('Invalid checkout link.', 'error');
+    return;
+  }
+  await loadCart();
+})();
+
+// ─── CART LOADING ─────────────────────────────────────────────────────────────
+async function loadCart() {
+  try {
+    const res = await fetch(`/cart-data?cart_token=${encodeURIComponent(state.cartToken)}`);
+    if (!res.ok) throw new Error('Cart not found');
+    const data = await res.json();
+    state.cartData = data.cart;
+    state.checkoutSessionId = data.checkout_session_id;
+    renderCart(data.cart);
+    renderSummary(data.cart);
+  } catch (err) {
+    document.getElementById('cart-items-container').innerHTML =
+      '<div style="padding:20px;color:var(--error);text-align:center">⚠️ Failed to load cart. Please try again.</div>';
+  }
+}
+
+function formatPrice(amount) {
+  return '₹' + parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function renderCart(cart) {
+  const container = document.getElementById('cart-items-container');
+  const lines = cart.lines.edges;
+
+  if (!lines.length) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">Your cart is empty.</div>';
+    document.getElementById('btn-to-address').disabled = true;
+    return;
+  }
+
+  container.innerHTML = lines.map(({ node }) => {
+    const img = node.merchandise.image?.url || node.merchandise.product?.images?.edges?.[0]?.node?.url;
+    const imgEl = img
+      ? `<img class="cart-item-img" src="${esc(img)}" alt="${esc(node.merchandise.product?.title || '')}" loading="lazy" />`
+      : `<div class="cart-item-img-placeholder">📦</div>`;
+
+    const variant = node.merchandise.selectedOptions?.map(o => o.value).join(' / ') || '';
+    const compareAt = node.merchandise.compareAtPrice?.amount;
+    const compareEl = compareAt && parseFloat(compareAt) > parseFloat(node.merchandise.price.amount)
+      ? `<span class="cart-item-compare">${formatPrice(compareAt)}</span>` : '';
+
+    const qty = node.merchandise.quantityAvailable;
+    let stockBadge = '';
+    if (qty === 0) stockBadge = '<div class="cart-inventory-badge out-stock">⚠️ Out of stock</div>';
+    else if (qty <= 5) stockBadge = `<div class="cart-inventory-badge low-stock">🔥 Only ${qty} left!</div>`;
+    else stockBadge = '<div class="cart-inventory-badge in-stock">✓ In stock</div>';
+
+    return `
+      <div class="cart-item">
+        ${imgEl}
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(node.merchandise.product?.title || 'Product')}</div>
+          ${variant ? `<div class="cart-item-variant">${esc(variant)}</div>` : ''}
+          <div class="cart-item-qty-price">
+            <span class="cart-item-qty">Qty: ${node.quantity}</span>
+            <span><span class="cart-item-price">${formatPrice(node.cost.totalAmount.amount)}</span>${compareEl}</span>
+          </div>
+          ${stockBadge}
+        </div>
+      </div>`;
+  }).join('');
+
+  state.subtotal = parseFloat(cart.cost.subtotalAmount.amount);
+  state.grandTotal = state.subtotal;
+}
+
+function renderSummary(cart) {
+  const lines = cart.lines.edges;
+  document.getElementById('summary-count').textContent = `${cart.totalQuantity} item${cart.totalQuantity !== 1 ? 's' : ''}`;
+
+  document.getElementById('summary-products-list').innerHTML = lines.map(({ node }) => {
+    const img = node.merchandise.image?.url || node.merchandise.product?.images?.edges?.[0]?.node?.url;
+    const imgEl = img
+      ? `<img class="summary-product-img" src="${esc(img)}" alt="" loading="lazy" />`
+      : `<div class="summary-product-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</div>`;
+    return `
+      <div class="summary-product">
+        ${imgEl}
+        <div class="summary-product-name">${esc(node.merchandise.product?.title || 'Product')} × ${node.quantity}</div>
+        <div class="summary-product-price">${formatPrice(node.cost.totalAmount.amount)}</div>
+      </div>`;
+  }).join('');
+
+  updateSummaryTotals();
+}
+
+function updateSummaryTotals() {
+  document.getElementById('summary-subtotal').textContent = formatPrice(state.subtotal);
+  if (state.discountAmount > 0) {
+    document.getElementById('summary-discount-row').style.display = 'flex';
+    document.getElementById('summary-discount').textContent = '- ' + formatPrice(state.discountAmount);
+  } else {
+    document.getElementById('summary-discount-row').style.display = 'none';
+  }
+  state.grandTotal = state.subtotal - state.discountAmount;
+  document.getElementById('summary-total').textContent = formatPrice(state.grandTotal);
+}
+
+// ─── STEP NAVIGATION ──────────────────────────────────────────────────────────
+function goToStep(step) {
+  document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+  const stepIds = ['step-cart', 'step-address', 'step-otp', 'step-email', 'step-payment'];
+  if (stepIds[step - 1]) document.getElementById(stepIds[step - 1]).classList.add('active');
+  state.currentStep = step;
+  updateProgress(step);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress(step) {
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    const line = document.getElementById(`line-${i}`);
+    if (!dot) continue;
+    dot.classList.remove('active', 'done');
+    if (i < step) { dot.classList.add('done'); if (line) line.classList.add('done'); }
+    else if (i === step) { dot.classList.add('active'); }
+    else { if (line) line.classList.remove('done'); }
+  }
+}
+
+// ─── ADDRESS SUBMISSION ───────────────────────────────────────────────────────
+async function submitAddress() {
+  const name = document.getElementById('addr-name').value.trim();
+  const phone = document.getElementById('addr-phone').value.replace(/\D/g, '').slice(0, 10);
+  const line1 = document.getElementById('addr-line1').value.trim();
+  const city = document.getElementById('addr-city').value.trim();
+  const state_ = document.getElementById('addr-state').value;
+  const pin = document.getElementById('addr-pin').value.replace(/\D/g, '');
+
+  // Validate
+  let valid = true;
+  const setErr = (id, show) => { document.getElementById(id).classList.toggle('visible', show); };
+
+  setErr('err-name', !name); if (!name) valid = false;
+  setErr('err-phone', !/^[6-9]\d{9}$/.test(phone)); if (!/^[6-9]\d{9}$/.test(phone)) valid = false;
+  setErr('err-addr', !line1); if (!line1) valid = false;
+  setErr('err-city', !city); if (!city) valid = false;
+  setErr('err-state', !state_); if (!state_) valid = false;
+
+  if (!valid) return;
+
+  state.address = { full_name: name, address_line1: line1, city, state: state_, postal_code: pin };
+  state.phone = phone;
+
+  // Send OTP
+  const btn = document.getElementById('btn-to-otp');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const res = await fetch('/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Failed to send OTP', 'error'); return; }
+    document.getElementById('otp-phone-num').textContent = `+91 ${phone.slice(0,5)} ${phone.slice(5)}`;
+    goToStep(3);
+    startOTPTimer();
+  } catch {
+    showToast('Network error. Please try again.', 'error');
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+// ─── OTP TIMER ────────────────────────────────────────────────────────────────
+function startOTPTimer() {
+  if (state.otpTimerInterval) clearInterval(state.otpTimerInterval);
+  let secs = 30;
+  const timerEl = document.getElementById('otp-timer');
+  const resendBtn = document.getElementById('otp-resend-btn');
+  resendBtn.disabled = true;
+  timerEl.textContent = `(00:${String(secs).padStart(2,'0')})`;
+
+  state.otpTimerInterval = setInterval(() => {
+    secs--;
+    timerEl.textContent = secs > 0 ? `(00:${String(secs).padStart(2,'0')})` : '';
+    if (secs <= 0) {
+      clearInterval(state.otpTimerInterval);
+      resendBtn.disabled = false;
+      timerEl.textContent = '';
+    }
+  }, 1000);
+
+  // OTP digit logic
+  setupOTPInputs();
+}
+
+function setupOTPInputs() {
+  const inputs = document.querySelectorAll('.otp-digit');
+  inputs.forEach((input, idx) => {
+    input.value = '';
+    input.classList.remove('filled', 'error');
+    input.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/\D/g, '');
+      e.target.value = val.slice(-1);
+      if (val && idx < inputs.length - 1) inputs[idx + 1].focus();
+      e.target.classList.toggle('filled', !!val);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !input.value && idx > 0) inputs[idx - 1].focus();
+    });
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+      paste.split('').forEach((ch, i) => {
+        if (inputs[i]) { inputs[i].value = ch; inputs[i].classList.add('filled'); }
+      });
+      inputs[Math.min(paste.length, inputs.length - 1)].focus();
+    });
+  });
+  inputs[0].focus();
+}
+
+async function resendOTP() {
+  const btn = document.getElementById('otp-resend-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone }),
+    });
+    const data = await res.json();
+    if (res.ok) { showToast('OTP resent via WhatsApp ✓', 'success'); startOTPTimer(); }
+    else { showToast(data.error || 'Failed to resend', 'error'); btn.disabled = false; }
+  } catch { showToast('Network error', 'error'); btn.disabled = false; }
+}
+
+async function verifyOTP() {
+  const inputs = document.querySelectorAll('.otp-digit');
+  const otp = Array.from(inputs).map(i => i.value).join('');
+  if (otp.length !== 6) { showToast('Enter all 6 digits', 'error'); return; }
+
+  const btn = document.getElementById('btn-verify-otp');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const res = await fetch('/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone, otp }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.verified) {
+      inputs.forEach(i => i.classList.add('error'));
+      showToast(data.error || 'Invalid OTP', 'error');
+      return;
+    }
+    state.sessionToken = data.session_token;
+    clearInterval(state.otpTimerInterval);
+    goToStep(4);
+  } catch { showToast('Network error', 'error'); }
+  finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+// ─── EMAIL STEP ───────────────────────────────────────────────────────────────
+function submitEmail() {
+  const email = document.getElementById('email-input').value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Enter a valid email address', 'error'); return;
+  }
+  state.email = email || null;
+  goToStep(5);
+}
+function skipEmail() { state.email = null; goToStep(5); }
+
+// ─── COUPON ───────────────────────────────────────────────────────────────────
+async function applyCoupon() {
+  const code = document.getElementById('coupon-input').value.trim().toUpperCase();
+  if (!code) { showToast('Enter a coupon code', 'error'); return; }
+
+  const btn = document.getElementById('coupon-apply-btn');
+  btn.disabled = true; btn.textContent = '...';
+
+  try {
+    const lineItems = state.cartData.lines.edges.map(({ node }) => ({
+      variant_id: node.merchandise.id,
+      quantity: node.quantity,
+      price: node.cost.amountPerQuantity.amount,
+    }));
+
+    const res = await fetch('/apply-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coupon_code: code, cart_items: lineItems, subtotal: state.subtotal }),
+    });
+    const data = await res.json();
+    const resultEl = document.getElementById('coupon-result');
+
+    if (data.valid) {
+      state.couponCode = code;
+      state.discountAmount = data.discount_amount;
+      updateSummaryTotals();
+      resultEl.className = 'coupon-result success';
+      resultEl.innerHTML = `✅ <strong>${code}</strong> applied — you save ${formatPrice(data.discount_amount)}`;
+      resultEl.style.display = 'flex';
+      showToast(`Coupon applied! Saved ${formatPrice(data.discount_amount)}`, 'success');
+    } else {
+      resultEl.className = 'coupon-result fail';
+      resultEl.innerHTML = `❌ ${data.error || 'Invalid coupon'}`;
+      resultEl.style.display = 'flex';
+    }
+  } catch { showToast('Failed to apply coupon', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Apply'; }
+}
+
+function skipCoupon() {
+  state.couponCode = null; state.discountAmount = 0; updateSummaryTotals();
+  activatePaymentSection();
+}
+
+function activatePaymentSection() { /* coupon section stays, just scroll to payment */ }
+
+// ─── PAYMENT SELECTION ────────────────────────────────────────────────────────
+function selectPayment(method) {
+  state.paymentMethod = method;
+  document.getElementById('pay-cod').classList.toggle('selected', method === 'cod');
+  document.getElementById('pay-online').classList.toggle('selected', method === 'razorpay');
+  const btn = document.getElementById('btn-place-order');
+  btn.disabled = false;
+  document.getElementById('place-order-label').textContent =
+    method === 'cod' ? `Place Order — ${formatPrice(state.grandTotal)} COD` : `Pay ${formatPrice(state.grandTotal)} Securely →`;
+}
+
+// ─── PLACE ORDER ─────────────────────────────────────────────────────────────
+async function placeOrder() {
+  if (!state.paymentMethod) { showToast('Select a payment method', 'error'); return; }
+  if (state.paymentMethod === 'cod') {
+    await createOrder(null);
+  } else {
+    await initiateRazorpay();
+  }
+}
+
+async function initiateRazorpay() {
+  const btn = document.getElementById('btn-place-order');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const res = await fetch('/create-razorpay-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: state.grandTotal,
+        cart_token: state.cartToken,
+        session_token: state.sessionToken,
+        phone: state.phone,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Payment init failed', 'error'); return; }
+
+    state.razorpayOrderId = data.razorpay_order_id;
+
+    const options = {
+      key: data.key_id,
+      amount: data.amount,
+      currency: data.currency,
+      order_id: data.razorpay_order_id,
+      name: document.getElementById('store-name').textContent,
+      description: 'Order Payment',
+      prefill: {
+        contact: `+91${state.phone}`,
+        email: state.email || '',
+        name: state.address.full_name,
+      },
+      theme: { color: '#c9a84c' },
+      modal: {
+        ondismiss: () => {
+          btn.classList.remove('loading'); btn.disabled = false;
+          showToast('Payment cancelled', 'error');
+        },
+      },
+      handler: async (response) => {
+        btn.classList.add('loading'); btn.disabled = true;
+        await createOrder(response);
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    showToast('Payment gateway error', 'error');
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+async function createOrder(razorpayResponse) {
+  const btn = document.getElementById('btn-place-order');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  // Generate idempotency key for this order attempt
+  state.idempotencyKey = crypto.randomUUID();
+
+  try {
+    const payload = {
+      cart_token: state.cartToken,
+      address: state.address,
+      phone: state.phone,
+      email: state.email,
+      coupon_code: state.couponCode,
+      discount_amount: state.discountAmount,
+      payment_method: state.paymentMethod,
+      razorpay_data: razorpayResponse,
+      session_token: state.sessionToken,
+      checkout_session_id: state.checkoutSessionId,
+      idempotency_key: state.idempotencyKey,
+    };
+
+    const res = await fetch('/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showToast(data.error || 'Order creation failed. Contact support.', 'error');
+      btn.classList.remove('loading'); btn.disabled = false;
+      return;
+    }
+
+    showSuccessScreen(data);
+  } catch (err) {
+    showToast('Network error. Please contact support.', 'error');
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+// ─── SUCCESS ──────────────────────────────────────────────────────────────────
+function showSuccessScreen(data) {
+  document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById('success-screen');
+  screen.classList.add('active');
+  screen.style.display = 'block';
+
+  const orderNum = data.shopify_order_number || data.order_id?.slice(0, 8).toUpperCase();
+  document.getElementById('success-order-id').textContent = orderNum ? `#${orderNum}` : 'Order Confirmed';
+
+  // Animate redirect bar and redirect
+  setTimeout(() => {
+    document.getElementById('redirect-bar').style.width = '100%';
+  }, 200);
+  setTimeout(() => {
+    window.location.href = `https://${window.location.hostname.replace(/^checkout\./,'')}/` || '/';
+  }, 5000);
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  clearTimeout(toastTimer);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type ? `${type}-toast` : '';
+  t.classList.add('show');
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

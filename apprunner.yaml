@@ -1,0 +1,81 @@
+version: 1.0
+runtime: nodejs18
+
+build:
+  commands:
+    build:
+      - npm ci --only=production
+      - echo "Build completed"
+
+run:
+  command: node server.js
+  network:
+    port: 3000
+    env: PORT
+  runtime:
+    concurrency: 10  # Limit concurrent requests
+    timeout: 30      # Request timeout in seconds
+
+  env:
+    - name: NODE_ENV
+      value: production
+
+    # ── SHOPIFY ──────────────────────────────────────
+    - name: SHOPIFY_SHOP_DOMAIN
+      value: your-store.myshopify.com          # e.g. mystore.myshopify.com
+
+    - name: SHOPIFY_STOREFRONT_TOKEN
+      value: ""                                # Storefront API public token
+
+    - name: SHOPIFY_ADMIN_TOKEN
+      value: ""                                # Admin API access token (store in Secrets Manager)
+
+    - name: SHOPIFY_API_KEY
+      value: ""                                # App Client ID
+
+    - name: SHOPIFY_API_SECRET
+      value: ""                                # App Client Secret (store in Secrets Manager)
+
+    # ── RAZORPAY ─────────────────────────────────────
+    - name: RAZORPAY_KEY_ID
+      value: ""                                # rzp_live_XXXXX
+
+    - name: RAZORPAY_KEY_SECRET
+      value: ""                                # (store in Secrets Manager)
+
+    - name: RAZORPAY_WEBHOOK_SECRET
+      value: ""                                # Webhook signing secret from Razorpay dashboard
+
+    # ── META / WHATSAPP ───────────────────────────────
+    - name: META_WHATSAPP_TOKEN
+      value: ""                                # Meta Business permanent token
+
+    - name: META_PHONE_NUMBER_ID
+      value: ""                                # WhatsApp Business Phone Number ID
+
+    # ── SUPABASE ──────────────────────────────────────
+    - name: SUPABASE_URL
+      value: ""                                # https://xxxx.supabase.co
+
+    - name: SUPABASE_SERVICE_KEY
+      value: ""                                # service_role key (store in Secrets Manager)
+
+    # ── APP ───────────────────────────────────────────
+    - name: APP_URL
+      value: ""                                # https://checkout.yourdomain.com
+
+    - name: PORT
+      value: "3000"
+
+  healthcheck:
+    path: /health
+    interval: 30
+    timeout: 5
+    healthy_threshold: 2
+    unhealthy_threshold: 2
+
+  scaling:
+    min_instances: 1
+    max_instances: 10
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
